@@ -1,0 +1,10 @@
+# ninja log v5
+29	542	7411120087726826	CMakeFiles/Trabalho_2.dir/main.c.obj	429ad2b5d8d6c645
+6	334	7411120245236625	CMakeFiles/Trabalho_2.dir/btree.c.obj	734fef594f027351
+335	799	7411120249831495	Trabalho_2.exe	cd9bd4964551f64a
+34	541	7411120087736820	CMakeFiles/Trabalho_2.dir/gera_dados.c.obj	936bf2fe93b9182
+13	347	7411437987104507	CMakeFiles/Trabalho_2.dir/gera_dados.c.obj	1f48797c70e39e38
+19	348	7411437987114528	CMakeFiles/Trabalho_2.dir/main.c.obj	8bd23a35873e90
+6	349	7411437987104507	CMakeFiles/Trabalho_2.dir/btree.c.obj	8c3b03a3f057563c
+6	331	7411438115244449	CMakeFiles/Trabalho_2.dir/btree.c.obj	8c3b03a3f057563c
+332	827	7411438120141235	Trabalho_2.exe	8a2fe576b807a8d2
