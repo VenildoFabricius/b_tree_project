@@ -7,12 +7,14 @@ typedef struct no {
     struct no *pai;             // Ponteiro para o pai do nó
     int folha;                  // Inteiro que informa se o nó é folha
     int n;                      // Inteiro que informa a quantidade atual de chaves no nó
+    int posPai;
 } no;
 
 
-typedef struct bTree {
+typedef struct b_tree {
     no *sentinela;              // Ponteiro para a raiz da árvore
     int ordem;                  // Inteiro que informa a ordem da árvore
+    int qtd_nos;                // Inteiro para armazenar a quantidade de nós da árvore
 } b_tree;
 
 
