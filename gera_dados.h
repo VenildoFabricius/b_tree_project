@@ -1,8 +1,10 @@
+#include <stdlib.h>
+
 #ifndef TRABALHO_2_GERA_DADOS_H
 #define TRABALHO_2_GERA_DADOS_H
 
-void gerarPalAleatoria(char *pal, int tamanho);
+void gera_pal_aleatoria(char *str, size_t size);
 
-int gera_dados();
+void gera_arquivo(const char *filename);
 
 #endif //TRABALHO_2_GERA_DADOS_H

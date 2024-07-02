@@ -4,7 +4,7 @@
 
 int main() {
 
-    gera_dados();
+    gera_arquivo("dados.txt");
 
     return 0;
 }
