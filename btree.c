@@ -534,4 +534,110 @@ void bal_remocao(b_tree *arv, no *atual) {
     }
 }
 
+int procura_b_tree(b_tree *arv, int indice, no *raiz) {
+    int i;
 
+    // Condição de parada da função recursiva
+    if (!arv || !raiz)
+        return -1;
+
+    for (i = 0; i < raiz->n; i++) {
+        if (raiz->key[i].indice == indice)
+            return raiz->key[i].valor;
+
+        // Caso o índice buscado seja menor que o índice da chave do nó,
+        // Chama a função recursivamente passando o filho como parâmetro
+        if (indice < raiz->key[i].indice) {
+            return procura_b_tree(arv, indice, raiz->filhos[i]);
+        }
+    }
+
+    // Se o índice buscado for maior que todos os índices da raiz,
+    // Chama a função recursivamente passando o último filho como parâmetro
+    return procura_b_tree(arv, indice, raiz->filhos[raiz->n]);
+}
+
+void exclui_b_tree(struct b_tree *arv, struct no *raiz) {
+    // Libera sentinela se existir
+    if (arv->sentinela != NULL) {
+        arv->sentinela->filhos[0] = NULL;
+        free(arv->sentinela->filhos);
+        free(arv->sentinela);
+        arv->sentinela = NULL;
+    }
+
+    // Condição de parada da função recursiva
+    if (raiz == NULL)
+        return;
+
+    // Se raiz não for folha, libera cada um de seus filhos antes
+    if (!raiz->folha) {
+        for (int i = 0; i <= raiz->n; i++) {
+            exclui_b_tree(arv, raiz->filhos[i]);
+        }
+    }
+
+    // Libera estruturas da raiz
+    free(raiz->key);
+    free(raiz->filhos);
+    free(raiz);
+}
+
+no *raiz(b_tree *arv) {
+    return arv->sentinela->filhos[0];
+}
+
+int nro_nos(b_tree *arv) {
+    return arv->quantidadeNos;
+}
+
+void imprime_b_tree(no *raiz) {
+    int i;
+    // Condição de parada da função recursiva
+    if (!raiz)
+        return;
+
+    // Imprime o índice do nó
+    for (i = 0; i < raiz->n; i++) {
+        printf("%d ", raiz->key[i].indice);
+    }
+
+    // Imprime a quantidade de chaves do nó e se o mesmo é ou não folha
+    printf("n: %d ", raiz->n);
+    if (raiz->folha) {
+        printf("Folha");
+    }
+    printf("\n");
+
+    // Chama a função recursivamente, para cada nó da árvore
+    for (i = 0; i <= raiz->n; i++) {
+        imprime_b_tree(raiz->filhos[i]);
+    }
+}
+
+int processa_arquivo(b_tree *arv, char *nomeArquivo) {
+    FILE *arq;
+    arq = fopen(nomeArquivo, "r");
+
+    if (!arq)
+        return 0;
+
+    int indice, linha = 1;
+    char buffer[100];
+
+    while (!feof(arq)) {
+        // Lê índice a ser inserido na árvore
+        fscanf(arq, "%d", &indice);
+
+        // Insere uma chave na B Tree, contendo o índice e a linha do dado lido
+        insere_b_tree(arv, indice, linha);
+
+        // Pula para próxima linha no arquivo, descartando os dados após o índice
+        fgets(buffer, 100, arq);
+
+        // Incrementa a linha lida
+        linha++;
+    }
+
+    return 1;
+}

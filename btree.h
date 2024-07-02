@@ -38,7 +38,21 @@ int remove_b_tree(b_tree *arv, int indice);
 void bal_remocao(b_tree *arv, no *atual);
 
 // Função para procurar elementos na B Tree
-int procura_b_tree(b_tree *arv, int indice);
+int procura_b_tree(b_tree *arv, int indice, no *raiz);
 
+// Função para excluir a B Tree
+void exclui_b_tree(b_tree *arv, no *raiz);
+
+// Função para retornar a raiz da B Tree
+no *raiz(b_tree *arv);
+
+// Função para retornar a quantidade de nós da B Tree
+int nro_nos(b_tree *arv);
+
+// Função para imprimir a B Tree
+void imprime_b_tree(no *raiz);
+
+// Função para carregar o arquivo com os dados
+int processa_arquivo(b_tree *arv, char *nomeArquivo);
 
 #endif // BTREE_H

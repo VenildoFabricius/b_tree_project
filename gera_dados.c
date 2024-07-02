@@ -8,6 +8,8 @@
 #define MIN_NUMBER 10000
 #define MAX_NUMBER 99999
 #define STRING_SIZE 10
+#define TOTAL_LINHAS 15000
+#define MAX_LINHA 256
 
 void gera_pal_aleatoria(char *str, size_t size) {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -71,4 +73,47 @@ void gera_arquivo(const char *filename) {
     // Libera memória
     free(numbers);
     fclose(file);
+}
+
+int* valores_alts(const char *nome_arquivo, int qtd_valores_aleatorios) {
+    FILE *arquivo;
+    int numeros[TOTAL_LINHAS];
+    int *valoresSelecionados;
+    char linha[MAX_LINHA];
+    int i, indice;
+
+    // Inicializa a semente do gerador de números aleatórios
+    srand(time(NULL));
+
+    // Abre o arquivo para leitura
+    arquivo = fopen(nome_arquivo, "r");
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return NULL;
+    }
+
+    // Lê o arquivo e armazena a primeira coluna em um array
+    for (i = 0; i < TOTAL_LINHAS; i++) {
+        if (fgets(linha, sizeof(linha), arquivo)) {
+            sscanf(linha, "%d", &numeros[i]);
+        }
+    }
+
+    // Fecha o arquivo
+    fclose(arquivo);
+
+    // Aloca memória para os valores selecionados
+    valoresSelecionados = (int *)malloc(qtd_valores_aleatorios * sizeof(int));
+    if (!valoresSelecionados) {
+        perror("Erro ao alocar memória");
+        return NULL;
+    }
+
+    // Gera valores aleatórios da primeira coluna
+    for (i = 0; i < qtd_valores_aleatorios; i++) {
+        indice = rand() % TOTAL_LINHAS;
+        valoresSelecionados[i] = numeros[indice];
+    }
+
+    return valoresSelecionados;
 }
