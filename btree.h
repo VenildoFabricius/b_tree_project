@@ -12,7 +12,7 @@ typedef struct no {
     struct no *pai;             // Ponteiro para o pai do nó
     int folha;                  // Inteiro que informa se o nó é folha
     int n;                      // Inteiro que informa a quantidade atual de chaves no nó
-    int posPai;
+    int pai_posicao;            // Inteiro que guarda a posição do nó em relação ao pai
 } no;
 
 typedef struct b_tree {

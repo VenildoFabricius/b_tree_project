@@ -37,10 +37,11 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
         // Incrementa a quantidade de nós
         arv->quantidadeNos++;
 
-        // Aloca as chaves do nó, com ordem-1 chaves
-        raiz->key = (chave *)malloc((arv->ordem - 1) * sizeof(chave));
-        // Aloca o vetor de filhos, com tamanho ordem
-        raiz->filhos = (no **)malloc((arv->ordem) * sizeof(no *));
+        // Aloca as chaves do nó, com ordem chaves. A posição extra permite alocar uma chave além da permitida e
+        // realizar a operação de split posteriormente
+        raiz->key = (chave *)malloc(arv->ordem * sizeof(chave));
+        // Aloca o vetor de filhos, com tamanho ordem + 1. Mesmo caso da quantidade de chaves.
+        raiz->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
         // Para cada posição do vetor de filhos, atribui NULL, pois a raiz ainda não nenhum filho
         for (i = 0; i <= arv->ordem; i++) {
             raiz->filhos[i] = NULL;
@@ -99,8 +100,8 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
     // Incrementa a quantidade de chaves do nó
     atual->n++;
 
-    // Se a quantidade de chaves do nó atingiu o limite máximo (ordem - 1), é necessário fazer o balanceamento
-    if (atual->n == arv->ordem - 1) {
+    // Se a quantidade de chaves do nó atingiu o limite máximo (ordem), é necessário fazer o balanceamento
+    if (atual->n == arv->ordem) {
         bal_insercao(arv, atual);
     }
 
@@ -108,15 +109,12 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
 }
 
 void bal_insercao(b_tree *arv, no *atual) {
-    int i, j = 0;
+    int i, j;
     no *pai;
 
-    // Operações de SPLIT
-
-    // Verifica se atual é a raiz
+    // Verifica se o nó atual é a raiz
     if (arv->sentinela->filhos[0] == atual) {
-
-        // Cria nova raiz
+        // Se sim, é necessário criar um novo nó, que será o pai do nó desbalanceado
         pai = (no *)malloc(sizeof(no));
         pai->key = (chave *)malloc(arv->ordem * sizeof(chave));
         pai->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
@@ -124,7 +122,7 @@ void bal_insercao(b_tree *arv, no *atual) {
             pai->filhos[i] = NULL;
         }
 
-        // Cria irmão
+        // Cria irmão do nó desbalanceado, que será usado na operação de split
         no *irmao = (no *)malloc(sizeof(no));
         irmao->key = (chave *)malloc(arv->ordem * sizeof(chave));
         irmao->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
@@ -132,62 +130,85 @@ void bal_insercao(b_tree *arv, no *atual) {
             irmao->filhos[i] = NULL;
         }
 
-        // Atualiza valores do pai
+        // Atualiza os valores do pai
+        // Nó pai não será uma folha
         pai->folha = 0;
+        // A quantidade de nós do pai será 1, uma vez que o nó atual era raiz
         pai->n = 1;
+        // Como o pai passa a ser a raiz, o pai do pai é a sentinela
         pai->pai = arv->sentinela;
+        // E o filho da sentinela passa a ser o pai
         arv->sentinela->filhos[0] = pai;
+        // O filho esquerdo do nó pai será o nó atual
         pai->filhos[0] = atual;
+        // E o filho direito, o nó irmão criado na operação de split
         pai->filhos[1] = irmao;
 
-        // Move valor central do nó atual para nova raiz
+        // Encontra o valor central do nó atual e o copia para a raiz
         pai->key[0] = atual->key[(arv->ordem - 1) / 2];
 
-        // Atualiza valores do irmão
+        // Atualiza os valores do irmão
+        // Irmão está na mesma altura do nó atual, portanto tem a mesma informação de folha
         irmao->folha = atual->folha;
+        // A quantidade de chaves do irmão criado será a metade da ordem da árvore, uma vez que o nó atual foi divido ao meio
         irmao->n = arv->ordem / 2;
+        // O pai do irmão será o nó pai criado na operação de split
         irmao->pai = pai;
-        irmao->posPai = 1;
+        // O irmão passa a ser o filho "1" do pai
+        irmao->pai_posicao = 1;
 
         // Insere elementos do nó atual no nó irmão criado
+        // Variável para percorrer o nó irmão
+        j = 0;
+        // Loop começa no meio do nó atual e termina ao atingir ordem-1
         for (i = ((arv->ordem - 1) / 2) + 1; i < arv->ordem; i++) {
+            // A cópia do nó atual para o irmão começa na posição posterior à central
             irmao->key[j] = atual->key[i];
+            // O mesmo vale para os filhos dos nós
             irmao->filhos[j] = atual->filhos[i];
-            if (atual->filhos[i] != NULL) {
+            // Se o nó atual possuir filhos, estes filhos passam a ser filhos do nó irmão
+            if (atual->filhos[i]) {
                 atual->filhos[i]->pai = irmao;
-                atual->filhos[i]->posPai = j;
+                atual->filhos[i]->pai_posicao = j;
                 atual->filhos[i] = NULL;
             }
             j++;
         }
-        // Copia último ponteiro de atual para irmão
+        // Copia o último ponteiro do nó atual para o irmão criado
         irmao->filhos[j] = atual->filhos[i];
         if (atual->filhos[i]) {
             atual->filhos[i]->pai = irmao;
-            atual->filhos[i]->posPai = j;
+            atual->filhos[i]->pai_posicao = j;
             atual->filhos[i] = NULL;
         }
 
-        // Atualizando atual
+        // Atualiza os valores do nó atual
+        // A quantidade de chaves no nó atual passa a ser a metade da ordem-1
         atual->n = (arv->ordem - 1) / 2;
+        // Passa a ter como pai o nó criado na operação de split
         atual->pai = pai;
-        atual->posPai = 0;
+        // Nó atual é o filho "0" do pai
+        atual->pai_posicao = 0;
 
+        // Incrementa a quantidade de nós da árvore em 2 (irmão e pai)
         arv->quantidadeNos += 2;
+
+    // Se o nó desbalanceado não for raiz
     } else {
-        // Copia valores e filhos uma posição para trás no nó pai a partir da
-        // posição que o nó atual estava
         pai = atual->pai;
-        for (i = pai->n; i > atual->posPai; i--) {
+        for (i = pai->n; i > atual->pai_posicao; i--) {
+            // Os índices são copiados uma posição para a frente do vetor a cada iteração
             pai->key[i] = pai->key[i - 1];
+            // A partir da posição atual do nó, os vetores dos filhos do pai são copiados uma posição para a frente
             pai->filhos[i + 1] = pai->filhos[i];
-            pai->filhos[i + 1]->posPai++;
+            // E a sua posição em relação ao pai é incrementada
+            pai->filhos[i + 1]->pai_posicao++;
         }
 
-        // Move valor central do nó atual para nó pai
-        pai->key[atual->posPai] = atual->key[(arv->ordem - 1) / 2];
+        // A posição central do nó atual é copiada para o pai
+        pai->key[atual->pai_posicao] = atual->key[(arv->ordem - 1) / 2];
 
-        // Cria irmão
+        // Cria-se um irmão para a operação de split
         no *irmao = (no *)malloc(sizeof(no));
         irmao->key = (chave *)malloc(arv->ordem * sizeof(chave));
         irmao->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
@@ -195,46 +216,56 @@ void bal_insercao(b_tree *arv, no *atual) {
             irmao->filhos[i] = NULL;
         }
 
-        // Faz pai apontar para o irmão criado uma posição após o nó atual no vetor
-        // de filhos do pai
-        pai->filhos[atual->posPai + 1] = irmao;
+        // O ponteiro de filhos do pai, posterior à posição do nó atual, aponta para o irmão criado
+        pai->filhos[atual->pai_posicao + 1] = irmao;
 
-        // Copia valores de atual para irmão
+        // Atualiza os valores do nó criado
+        // Irmão está na mesma altura do nó atual, portanto tem a mesma informação de folha
         irmao->folha = atual->folha;
+        // A quantidade de chaves do irmão criado será a metade da ordem da árvore, uma vez que o nó atual foi divido ao meio
         irmao->n = arv->ordem / 2;
+        // O pai do irmão será o mesmo pai do nó atual
         irmao->pai = pai;
-        irmao->posPai = atual->posPai + 1;
+        // O irmão passa a ser o filho posterior ao atual
+        irmao->pai_posicao = atual->pai_posicao + 1;
 
+        j = 0;
         for (i = ((arv->ordem - 1) / 2) + 1; i < arv->ordem; i++) {
+            // A cópia do nó atual para o irmão começa na posição posterior à central
             irmao->key[j] = atual->key[i];
+            // O mesmo vale para os filhos dos nós
             irmao->filhos[j] = atual->filhos[i];
-            if (irmao->filhos[j] != NULL) {
+            // Se o nó atual possuir filhos, estes filhos passam a ser filhos do nó irmão
+            if (irmao->filhos[j]) {
                 irmao->filhos[j]->pai = irmao;
-                irmao->filhos[j]->posPai = j;
+                irmao->filhos[j]->pai_posicao = j;
                 atual->filhos[i] = NULL;
             }
             j++;
         }
-        // Copia último ponteiro de atual para irmão
+        // Copia o último ponteiro do nó atual para o irmão criado
         irmao->filhos[j] = atual->filhos[i];
         if (atual->filhos[i]) {
             atual->filhos[i]->pai = irmao;
-            atual->filhos[i]->posPai = j;
+            atual->filhos[i]->pai_posicao = j;
             atual->filhos[i] = NULL;
         }
 
+        // A quantidade de chaves no nó atual passa a ser a metade da ordem-1
         atual->n = (arv->ordem - 1) / 2;
 
+        // Incrementa a quantidade de filhos do pai
         pai->n++;
 
-        // Verifica se desbalanceou o pai
+        // Se a quantidade de chaves do pai atingiu o limite máximo (ordem), é necessário fazer o balanceamento do pai
         if (pai->n == arv->ordem) {
             bal_insercao(arv, pai);
 
             // Atualiza nó pai caso ele tenha mudado pela chamada da função
-            pai = atual->pai;
+//            pai = atual->pai;
         }
 
+        // Incrementa a quantidade de nós da árvore
         arv->quantidadeNos++;
     }
 }
