@@ -2,239 +2,239 @@
 #include <stdlib.h>
 #include "btree.h"
 
-
 b_tree *cria_b_tree(int ordem){
+    // Aloca a árvore
     b_tree *arv = (b_tree*) malloc(sizeof(b_tree));
+    // Atribui a ordem passada como parâmetro
     arv->ordem = ordem;
+    // Aloca a sentinela
     arv->sentinela = (no*) malloc(sizeof(no));
-    arv->sentinela->ponteiros = (no**) malloc(sizeof(no*));
-    arv->sentinela->ponteiros[0] = NULL;
+    // Aloca o vetor do filho da sentinela, com tamanho único
+    arv->sentinela->filhos = (no**) malloc(sizeof(no*));
+    // Como a árvore é inicialmente vazia, sentinela não possui filho
+    arv->sentinela->filhos[0] = NULL;
 
-    // n = -1 indica que é a sentinela
+    // Atribui -1 à quantidade de chaves, indicando que é a sentinela
     arv->sentinela->n = -1;
+
     return arv;
 }
 
-int insere_b_tree(b_tree *arv, int indice, int linha){
+int insere_b_tree(b_tree *arv, int indice, int valor) {
     no *raiz, *atual;
     int achou, i;
 
-    if(!arv)
+    // Se a árvore não foi alocada, não é possível fazer a inserção
+    if (!arv)
         return 0;
 
-    if(!arv->sentinela->ponteiros[0]){
-        raiz = (no*) malloc(sizeof(no));
-        arv->sentinela->ponteiros[0] = raiz;
+    // Inserindo em uma árvore vazia
+    if (!arv->sentinela->filhos[0]) {
+        // Aloca o nó
+        raiz = (no *)malloc(sizeof(no));
+        // Atribui ao primeiro filho da sentinela
+        arv->sentinela->filhos[0] = raiz;
+        // Incrementa a quantidade de nós
+        arv->quantidadeNos++;
 
-        raiz->vet = (int**) malloc(arv->ordem*sizeof(int*));
-        for(i = 0; i < arv->ordem; i++){
-            raiz->vet[i] = (int*) malloc(2*sizeof(int));
+        // Aloca as chaves do nó, com ordem-1 chaves
+        raiz->key = (chave *)malloc((arv->ordem - 1) * sizeof(chave));
+        // Aloca o vetor de filhos, com tamanho ordem
+        raiz->filhos = (no **)malloc((arv->ordem) * sizeof(no *));
+        // Para cada posição do vetor de filhos, atribui NULL, pois a raiz ainda não nenhum filho
+        for (i = 0; i <= arv->ordem; i++) {
+            raiz->filhos[i] = NULL;
         }
-        raiz->vet[0][0] = indice;
-        raiz->vet[0][1] = linha;
+
+        // Preenche os dados da raiz
+        raiz->key[0].indice = indice;
+        raiz->key[0].valor = valor;
         raiz->pai = arv->sentinela;
         raiz->folha = 1;
         raiz->n = 1;
 
-        //Aloca vetor de ponteiros do nó de tamanho [m+1]
-        raiz->ponteiros = (no**) malloc((arv->ordem+1)*sizeof(no*));
-
-        for(i = 0; i <=arv->ordem; i++){
-            raiz->ponteiros[i] = NULL;
-        }
         return 1;
     }
 
-    atual = arv->sentinela->ponteiros[0];
+    // Caso já possua nós na árvore, um ponteiro auxiliar aponta para a raiz e percorre a árvore
+    atual = arv->sentinela->filhos[0];
 
-
-    //Procura nó folha para inserir elemento
-    while(atual->folha != 1){
-
+    // Procura nó folha para inserir elemento
+    while (atual->folha != 1) {
+        // Variável para informar se o nó onde será feita a inserção foi encontrado
         achou = 0;
-
-        //Percorre vetor até que índice seja maior que posição do vetor
-        for(i = 0; i < atual->n; i++){
-            if(indice < atual->vet[i][0]){
-                atual = atual->ponteiros[i];
+        // Busca pelo nó onde deve ser feita a inserção
+        for (i = 0; i < atual->n; i++) {
+            // Compara as chaves do nó atual até encontrar uma chave com índice maior do que o índice do nó a ser inserido
+            if (indice < atual->key[i].indice) {
+                // Encontrou o vetor de filhos onde a inserção deve ser feita
+                atual = atual->filhos[i];
                 achou = 1;
+                // Sai do loop
                 break;
             }
         }
-
-        //Caso indice seja maior que todos elementos do vetor nó atual recebe último ponteiro
-        if(!achou){
-            atual = atual->ponteiros[atual->n];
-            achou = 0;
+        // Se o índice da chave a ser inserida for maior que o maior índice do nó atual, a chave pertence a um filho
+        // direito do nó atual e o loop anterior não pôde encontrar
+        if (!achou) {
+            // A chave deve ser inserida no vetor com chaves maiores que o maior índice do nó atual
+            atual = atual->filhos[atual->n];
         }
     }
 
-    //Insere ordenado no nó
-    for(i = atual->n; i>0; i--){
-        if(indice > atual->vet[i-1][0]){
+    // Encontrado o nó, insere-se a chave de forma ordenada, comparando o índice da chave a ser inserida com cada índice
+    // do nó atual. A busca começa do maior índice e é decrementada até encontrar a posição de inserção
+    for (i = atual->n; i > 0; i--) {
+        // Se o índice da chave a ser inserida for maior que o maior índice do nó atual, o ponto de inserção foi
+        // encontrado, encerra-se o loop
+        if (indice > atual->key[i - 1].indice) {
             break;
         }
-        atual->vet[i][0] = atual->vet[i-1][0];
-        atual->vet[i][1] = atual->vet[i-1][1];
+        // Se não, os índices são copiados uma posição para a frente do vetor até que a posição de inserção seja encontrada
+        atual->key[i] = atual->key[i - 1];
     }
-    atual->vet[i][0] = indice;
-    atual->vet[i][1] = linha;
+    // Encontrada a posição de inserção, atribui-se o índice e o valor passados como parâmetros à respectiva chave
+    atual->key[i].indice = indice;
+    atual->key[i].valor = valor;
+    // Incrementa a quantidade de chaves do nó
     atual->n++;
 
-    // Verifica se nó atingiu limite de tamanho
-//    if(atual->n == arv->ordem){
-//        bal_insercao(arv, atual);
-//    }
+    // Se a quantidade de chaves do nó atingiu o limite máximo (ordem - 1), é necessário fazer o balanceamento
+    if (atual->n == arv->ordem - 1) {
+        bal_insercao(arv, atual);
+    }
 
     return 1;
 }
 
-void bal_insercao(b_tree *arv, no *atual){
+void bal_insercao(b_tree *arv, no *atual) {
     int i, j = 0;
     no *pai;
 
-    //Operações de SPLIT
+    // Operações de SPLIT
 
-    //Verifica se atual é a raiz
-    if (arv->sentinela->ponteiros[0] == atual) {
+    // Verifica se atual é a raiz
+    if (arv->sentinela->filhos[0] == atual) {
 
-        //Cria nova raiz
-        pai = (no*) malloc(sizeof(no));
-        pai->vet = (int**) malloc(arv->ordem*sizeof(int*));
-        for (i = 0; i < arv->ordem; i++){
-            pai->vet[i] = (int *) malloc(2 * sizeof(int));
-        }
-        pai->ponteiros = (no**) malloc((arv->ordem+1)*sizeof(no*));
-        for (i = 0; i <= arv->ordem; i++){
-            pai->ponteiros[i] = NULL;
+        // Cria nova raiz
+        pai = (no *)malloc(sizeof(no));
+        pai->key = (chave *)malloc(arv->ordem * sizeof(chave));
+        pai->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
+        for (i = 0; i <= arv->ordem; i++) {
+            pai->filhos[i] = NULL;
         }
 
-        //Cria irmão
-        no *irmao = (no*) malloc(sizeof(no));
-        irmao->vet = (int**) malloc(arv->ordem * sizeof(int*));
-        for (i = 0; i < arv->ordem; i++){
-            irmao->vet[i] = (int*) malloc(2*sizeof(int));
-        }
-        irmao->ponteiros = (no**) malloc((arv->ordem+1) * sizeof(no*));
-        for (i = 0; i <= arv->ordem; i++){
-            irmao->ponteiros[i] = NULL;
+        // Cria irmão
+        no *irmao = (no *)malloc(sizeof(no));
+        irmao->key = (chave *)malloc(arv->ordem * sizeof(chave));
+        irmao->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
+        for (i = 0; i <= arv->ordem; i++) {
+            irmao->filhos[i] = NULL;
         }
 
-        //Atualiza valores do pai
+        // Atualiza valores do pai
         pai->folha = 0;
         pai->n = 1;
         pai->pai = arv->sentinela;
-        arv->sentinela->ponteiros[0] = pai;
-        pai->ponteiros[0] = atual;
-        pai->ponteiros[1] = irmao;
+        arv->sentinela->filhos[0] = pai;
+        pai->filhos[0] = atual;
+        pai->filhos[1] = irmao;
 
-        //Move valor central do nó atual para nova raiz
-        pai->vet[0][0] = atual->vet[(arv->ordem-1)/2][0];
-        pai->vet[0][1] = atual->vet[(arv->ordem-1)/2][1];
+        // Move valor central do nó atual para nova raiz
+        pai->key[0] = atual->key[(arv->ordem - 1) / 2];
 
-        //Atualiza valores do Irmão
+        // Atualiza valores do irmão
         irmao->folha = atual->folha;
-        irmao->n = ((arv->ordem)/2);
+        irmao->n = arv->ordem / 2;
         irmao->pai = pai;
         irmao->posPai = 1;
 
-        //Insere elementos do nó atual no nó irmão criado
-        for (i = ((arv->ordem-1)/2)+1; i < arv->ordem; i++){
-            irmao->vet[j][0] = atual->vet[i][0];
-            irmao->vet[j][1] = atual->vet[i][1];
-            irmao->ponteiros[j] = atual->ponteiros[i];
-            if (atual->ponteiros[i]){
-                atual->ponteiros[i]->pai = irmao;
-                atual->ponteiros[i]->posPai = j;
-                atual->ponteiros[i] = NULL;
+        // Insere elementos do nó atual no nó irmão criado
+        for (i = ((arv->ordem - 1) / 2) + 1; i < arv->ordem; i++) {
+            irmao->key[j] = atual->key[i];
+            irmao->filhos[j] = atual->filhos[i];
+            if (atual->filhos[i] != NULL) {
+                atual->filhos[i]->pai = irmao;
+                atual->filhos[i]->posPai = j;
+                atual->filhos[i] = NULL;
             }
             j++;
         }
-
-        //Copia última ponteiro de atual para irmão
-        irmao->ponteiros[j] = atual->ponteiros[i];
-        if (atual->ponteiros[i]){
-            atual->ponteiros[i]->pai = irmao;
-            atual->ponteiros[i]->posPai = j;
-            atual->ponteiros[i] = NULL;
+        // Copia último ponteiro de atual para irmão
+        irmao->filhos[j] = atual->filhos[i];
+        if (atual->filhos[i]) {
+            atual->filhos[i]->pai = irmao;
+            atual->filhos[i]->posPai = j;
+            atual->filhos[i] = NULL;
         }
 
-        //Atualizando atual
-        atual->n = (arv->ordem-1)/2;
+        // Atualizando atual
+        atual->n = (arv->ordem - 1) / 2;
         atual->pai = pai;
         atual->posPai = 0;
 
-        arv->qtd_nos += 2;
-    }
-
-    else {
-        /*Copia valores e ponteiros uma posição para trás no nó pai a partir da posição que o
-        nó atual estava*/
+        arv->quantidadeNos += 2;
+    } else {
+        // Copia valores e filhos uma posição para trás no nó pai a partir da
+        // posição que o nó atual estava
         pai = atual->pai;
         for (i = pai->n; i > atual->posPai; i--) {
-            pai->vet[i][0] = pai->vet[i-1][0];
-            pai->vet[i][1] = pai->vet[i-1][1];
-            pai->ponteiros[i+1] = pai->ponteiros[i];
-            pai->ponteiros[i+1]->posPai++;
+            pai->key[i] = pai->key[i - 1];
+            pai->filhos[i + 1] = pai->filhos[i];
+            pai->filhos[i + 1]->posPai++;
         }
 
-        //Move valor central do nó atual para nó pai
-        pai->vet[atual->posPai][0] = atual->vet[(arv->ordem-1)/2][0];
-        pai->vet[atual->posPai][1] = atual->vet[(arv->ordem-1)/2][1];
+        // Move valor central do nó atual para nó pai
+        pai->key[atual->posPai] = atual->key[(arv->ordem - 1) / 2];
 
-        //Cria irmão
-        no *irmao = (no*) malloc(sizeof(no));
-        irmao->vet = (int**) malloc(arv->ordem*sizeof(int*));
-        for (i = 0; i < arv->ordem; i++){
-            irmao->vet[i] = (int*) malloc(2 * sizeof(int));
-        }
-        irmao->ponteiros = (no**) malloc((arv->ordem+1)*sizeof(no*));
-        for (i = 0; i <= arv->ordem; i++){
-            irmao->ponteiros[i] = NULL;
+        // Cria irmão
+        no *irmao = (no *)malloc(sizeof(no));
+        irmao->key = (chave *)malloc(arv->ordem * sizeof(chave));
+        irmao->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
+        for (i = 0; i <= arv->ordem; i++) {
+            irmao->filhos[i] = NULL;
         }
 
-        /*Faz pai apontar para o irmão criado uma posição após o nó atual no vetor de ponteiros
-        do pai*/
-        pai->ponteiros[atual->posPai+1] = irmao;
+        // Faz pai apontar para o irmão criado uma posição após o nó atual no vetor
+        // de filhos do pai
+        pai->filhos[atual->posPai + 1] = irmao;
 
-        //Copia valores de atual para irmão
+        // Copia valores de atual para irmão
         irmao->folha = atual->folha;
-        irmao->n = (arv->ordem)/2;
+        irmao->n = arv->ordem / 2;
         irmao->pai = pai;
-        irmao->posPai = atual->posPai+1;
+        irmao->posPai = atual->posPai + 1;
 
-        for (i = ((arv->ordem-1)/2)+1; i < arv->ordem; i++){
-            irmao->vet[j][0] = atual->vet[i][0];
-            irmao->vet[j][1] = atual->vet[i][1];
-            irmao->ponteiros[j] = atual->ponteiros[i];
-            if (irmao->ponteiros[j]){
-                irmao->ponteiros[j]->pai = irmao;
-                irmao->ponteiros[j]->posPai = j;
-                atual->ponteiros[i] = NULL;
+        for (i = ((arv->ordem - 1) / 2) + 1; i < arv->ordem; i++) {
+            irmao->key[j] = atual->key[i];
+            irmao->filhos[j] = atual->filhos[i];
+            if (irmao->filhos[j] != NULL) {
+                irmao->filhos[j]->pai = irmao;
+                irmao->filhos[j]->posPai = j;
+                atual->filhos[i] = NULL;
             }
             j++;
         }
-
-        //Copia última ponteiro de atual para irmão
-        irmao->ponteiros[j] = atual->ponteiros[i];
-        if (atual->ponteiros[i]){
-            atual->ponteiros[i]->pai = irmao;
-            atual->ponteiros[i]->posPai = j;
-            atual->ponteiros[i] = NULL;
+        // Copia último ponteiro de atual para irmão
+        irmao->filhos[j] = atual->filhos[i];
+        if (atual->filhos[i]) {
+            atual->filhos[i]->pai = irmao;
+            atual->filhos[i]->posPai = j;
+            atual->filhos[i] = NULL;
         }
 
-        atual->n = (arv->ordem-1)/2;
+        atual->n = (arv->ordem - 1) / 2;
 
         pai->n++;
 
-        //Verifica se desbalanceou o pai
-        if(pai->n == arv->ordem){
+        // Verifica se desbalanceou o pai
+        if (pai->n == arv->ordem) {
             bal_insercao(arv, pai);
 
-            //Atualiza nó pai caso ele tenha mudado pela chamada da função
+            // Atualiza nó pai caso ele tenha mudado pela chamada da função
             pai = atual->pai;
         }
 
-        arv->qtd_nos++;
+        arv->quantidadeNos++;
     }
 }
