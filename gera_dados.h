@@ -7,6 +7,8 @@ void gera_pal_aleatoria(char *str, size_t size);
 
 void gera_arquivo(const char *filename);
 
-int* valores_alts(const char *nome_arquivo, int qtd_valores_aleatorios);
+void shuffle(int *array, int n);
+
+void selecionar30Elementos(char *arquivoEntrada, char *arquivoSaida);
 
 #endif //TRABALHO_2_GERA_DADOS_H

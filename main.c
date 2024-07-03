@@ -6,14 +6,16 @@
 #include <gera_dados.h>
 
 int main() {
-    int indice, indiceBusca, opt, linha, ret, ordem, begin, end, *indices_aleatorios;
+    int indice, indiceBusca, opt, linha, ret, ordem, i;
+    clock_t begin, end;
     float tempos_arvore[30], tempos_arquivo[30], tempo_arvore, tempo_arquivo, min_arvore, max_arvore, min_arquivo,
     max_arquivo, media_arvore, media_arquivo;
     char nomeArquivo[50] = {"arq1.txt"}, result1[11], result2[11], result3[11];
     b_tree *arv = NULL;
 
+    gera_arquivo("dados.txt");
     do {
-        printf("\tMENU\n");
+        printf("\n\tMENU\n");
         printf("1. Criar Indice\n");
         printf("2. Procurar elementos\n");
         printf("3. Remover registro\n");
@@ -61,12 +63,12 @@ int main() {
 
             case 2: // Procurar elementos
                 // Informa ao usuário caso a árvore seja nula
-                if (!arv) {
+                if (arv == NULL) {
                     printf("A arvore nao foi criada\n\n");
                     break;
                 }
 
-                // carrega o arquivo no modo leitura
+                // Carrega o arquivo no modo leitura
                 FILE *arq;
                 arq = fopen(nomeArquivo, "r");
 
@@ -76,72 +78,88 @@ int main() {
                     break;
                 }
 
-                // Busca aleatória de 30 elementos presentes no arquivo
-                indices_aleatorios = valores_alts(nomeArquivo, 30);
+                // Gera arquivo com 30 elementos aleatórios do arquivo de dados
+                selecionar30Elementos(nomeArquivo, "30elem.txt");
 
-                // Realiza as buscas e calcula os tempos para os números válidos
-                for (int i = 0; i < 30; i++) {
-                    indice = indices_aleatorios[i];
+                // Carrega o arquivo com 30 elementos aleatórios no modo leitura
+                FILE *busca30 = fopen("30elem.txt", "r");
+                if (!busca30) {
+                    printf("Falha ao carregar o arquivo com elementos aleatorios\n\n");
+                    fclose(arq);
+                    break;
+                }
 
-                // Busca na árvore. Obtém a linha referente ao índice buscado e acessa os dados deste índice
-                // Diretamente no arquivo
-                    // Inicia a contagem de tempo
+            // Busca na árvore. Obtém a linha referente ao índice buscado e acessa os dados deste índice diretamente no arquivo
+                i = 0;
+                while (fscanf(busca30, "%d", &indice) == 1) {
+                    printf("\nBusca na arvore:");
+
+                    // Inicia a contagem do tempo
                     begin = clock();
 
+                    // Obtém a linha referente ao dado procurado
                     linha = procura_b_tree(arv, indice, raiz(arv));
 
                     if (linha != -1) {
-                        arq = fopen(nomeArquivo, "r");
-                        // 39 é o número de bytes na linha. (linha - 1) porque os arrays em C são indexados a partir de 0
-                        // e o +6 é para ignorar bytes que não são relevantes, como os espaços
-                        fseek(arq, 39 * (linha - 1) + 6, 0);
-                        fscanf(arq, " %[^\t] %[^\t] %[^\t]", result1, result2, result3);
-                        fclose(arq);
-                    } else
+                        printf("\nIndice procurado: %d\nLinha: %d\n", indice, linha);
+                        // 40 é o número de bytes na linha. (linha - 1) porque os arrays em C são indexados a partir de 0
+                        // e o +6 é para ignorar os bytes do índice e pegar apenas as informações dos dados
+                        fseek(arq, 40 * (linha - 1) + 6, SEEK_SET);
+                        fscanf(arq, " %[^\t] %[^\t] %[^\n]", result1, result2, result3);
+                        printf("Valores: %s %s %s\n", result1, result2, result3);
+                    } else {
                         printf("Elemento nao encontrado na arvore\n");
+                    }
 
                     // Finaliza a contagem de tempo
                     end = clock();
                     // Calcula o tempo gasto na procura na árvore
-                    tempo_arvore = (float)(end - begin) / CLOCKS_PER_SEC;
+                    tempo_arvore = (float) (end - begin) / CLOCKS_PER_SEC;
+                    printf("Tempo: %.10f segundos\n", tempo_arvore);
                     // Armazena o tempo no vetor de tempos, usado para cálculo da média
                     tempos_arvore[i] = tempo_arvore;
 
-                // Busca no arquivo. Percorre linha por linha buscando o índice desejado
-                    arq = fopen(nomeArquivo, "r");
+                    // Busca no arquivo. Percorre linha por linha buscando o índice desejado
+                    printf("\nBusca no arquivo:");
+                    rewind(arq);
 
                     // Inicia a contagem de tempo
                     begin = clock();
 
+                    int encontrou = 0;
                     while (!feof(arq)) {
                         fscanf(arq, " %d", &indiceBusca);
-                        // Se o índice da linha atual corresponder ao índice buscado
                         if (indiceBusca == indice) {
-                            // Armazena os dados do índice em três variáveis, uma para cada coluna
-                            fscanf(arq, " %[^\t] %[^\t] %[^\t]", result1, result2, result3);
+                            printf("\nIndice procurado: %d\nLinha: %d\n", indice, linha);
+                            fscanf(arq, " %[^\t] %[^\t] %[^\n]", result1, result2, result3);
+                            printf("Valores: %s %s %s\n", result1, result2, result3);
+                            encontrou = 1;
                             break;
-                        // Se não, pula para a próxima linha
-                        } else
+                        } else {
                             fseek(arq, 33, 1);
-
+                        }
                         fgetc(arq);
                     }
-                    // Informa o usuário caso o índice buscado não tenha sido encontrado
-                    if (feof(arq))
+                    if (!encontrou) {
                         printf("Elemento nao encontrado no arquivo\n");
-
-                    // Fecha o arquivo
-                    fclose(arq);
+                    }
 
                     // Finaliza a contagem de tempo
                     end = clock();
                     // Calcula o tempo gasto na procura no arquivo
                     tempo_arquivo = (float)(end - begin) / CLOCKS_PER_SEC;
+                    printf("Tempo: %.10f segundos\n", tempo_arquivo);
                     // Armazena o tempo no vetor de tempos, usado para cálculo da média
                     tempos_arquivo[i] = tempo_arquivo;
+                    i++;
                 }
 
-                // Cálculo das métricas de tempo mínimo e máximo
+                // Fecha os arquivos
+                fclose(busca30);
+                fclose(arq);
+
+
+                // Cálculo das métricas de tempo mínimo, máximo e médio
                 // Inicialização das variáveis
                 min_arvore = tempos_arvore[0];
                 max_arvore = tempos_arvore[0];
@@ -150,7 +168,7 @@ int main() {
                 media_arvore = 0;
                 media_arquivo = 0;
 
-                for (int i = 0; i < 30; i++) {
+                for (i = 0; i < 30; i++) {
                     media_arvore += tempos_arvore[i];
                     media_arquivo += tempos_arquivo[i];
 

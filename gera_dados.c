@@ -8,8 +8,6 @@
 #define MIN_NUMBER 10000
 #define MAX_NUMBER 99999
 #define STRING_SIZE 10
-#define TOTAL_LINHAS 15000
-#define MAX_LINHA 256
 
 void gera_pal_aleatoria(char *str, size_t size) {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -75,45 +73,56 @@ void gera_arquivo(const char *filename) {
     fclose(file);
 }
 
-int* valores_alts(const char *nome_arquivo, int qtd_valores_aleatorios) {
-    FILE *arquivo;
-    int numeros[TOTAL_LINHAS];
-    int *valoresSelecionados;
-    char linha[MAX_LINHA];
-    int i, indice;
+void shuffle(int *array, int n) {
+    if (n > 1) {
+        for (int i = 0; i < n - 1; i++) {
+            int j = i + rand() / (RAND_MAX / (n - i) + 1);
+            int t = array[j];
+            array[j] = array[i];
+            array[i] = t;
+        }
+    }
+}
 
-    // Inicializa a semente do gerador de números aleatórios
-    srand(time(NULL));
-
-    // Abre o arquivo para leitura
-    arquivo = fopen(nome_arquivo, "r");
-    if (!arquivo) {
-        perror("Erro ao abrir o arquivo");
-        return NULL;
+void selecionar30Elementos(char *arquivoEntrada, char *arquivoSaida) {
+    int elements[15000];
+    FILE *file = fopen(arquivoEntrada, "r");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo de entrada");
+        return;
     }
 
-    // Lê o arquivo e armazena a primeira coluna em um array
-    for (i = 0; i < TOTAL_LINHAS; i++) {
-        if (fgets(linha, sizeof(linha), arquivo)) {
-            sscanf(linha, "%d", &numeros[i]);
+    char buffer[100];
+    int count = 0;
+
+    // Ler o primeiro número de cada linha e armazená-lo no array elements
+    while (fgets(buffer, 100, file) != NULL && count < 15000) {
+        if (sscanf(buffer, "%d", &elements[count]) == 1) {
+            count++;
+        } else {
+            fprintf(stderr, "Erro ao ler o elemento na linha %d\n", count + 1);
         }
     }
 
-    // Fecha o arquivo
-    fclose(arquivo);
+    fclose(file);
 
-    // Aloca memória para os valores selecionados
-    valoresSelecionados = (int *)malloc(qtd_valores_aleatorios * sizeof(int));
-    if (!valoresSelecionados) {
-        perror("Erro ao alocar memória");
-        return NULL;
+    if (count < 30) {
+        fprintf(stderr, "Erro: número de elementos lidos (%d) é menor que %d\n",
+                count, 30);
+        return;
     }
 
-    // Gera valores aleatórios da primeira coluna
-    for (i = 0; i < qtd_valores_aleatorios; i++) {
-        indice = rand() % TOTAL_LINHAS;
-        valoresSelecionados[i] = numeros[indice];
+    srand(time(NULL));
+    shuffle(elements, count);
+
+    file = fopen(arquivoSaida, "w");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo de saída");
+        return;
     }
 
-    return valoresSelecionados;
+    for (int i = 0; i < 30; i++) {
+        fprintf(file, "%d\n", elements[i]);
+    }
+    fclose(file);
 }
