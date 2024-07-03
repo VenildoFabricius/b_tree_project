@@ -9,7 +9,9 @@ b_tree *cria_b_tree(int ordem){
     arv->ordem = ordem;
     // Aloca a sentinela
     arv->sentinela = (no*) malloc(sizeof(no));
-    // Aloca o keyor do filho da sentinela, com tamanho único
+    // Inicializa a quantidade de nós da árvore
+    arv->quantidadeNos = 0;
+    // Aloca o vetor do filho da sentinela, com tamanho único
     arv->sentinela->filhos = (no**) malloc(sizeof(no*));
     // Como a árvore é inicialmente vazia, sentinela não possui filho
     arv->sentinela->filhos[0] = NULL;
@@ -271,78 +273,92 @@ void bal_insercao(b_tree *arv, no *atual) {
 }
 
 int remove_b_tree(b_tree *arv, int indice) {
-    if (!arv|| !arv->sentinela->filhos[0])
+    // Se a árvore não foi alocada ou se está vazia, não é possível fazer a remoção
+    if (!arv || !arv->sentinela->filhos[0])
         return 0;
 
     int pos = -1, i;
-    no *atual = arv->sentinela->filhos[0];
+    no *atual, *sucesr;
 
-    // Procura indice na B Tree
+    // Para remover, é necessário encontrar o índice. A busca começa da raiz
+    atual = arv->sentinela->filhos[0];
+
+    // Percorre as chaves do nó atual até encontrar o índice a ser removido
     do {
         for (i = 0; i < atual->n; i++) {
             if (indice == atual->key[i].indice) {
-                // pos armazena posição do elemento no nó
+                // Se encontrou, a variável pos recebe a posição do índice no nó atual, e a busca é encerrada
                 pos = i;
                 break;
             }
 
+            // Se não, a busca continua em um dos filhos do nó atual
             if (indice < atual->key[i].indice) {
-                // Caso não ache no vetor, nó atual recebe um de seus filhos
                 atual = atual->filhos[i];
+                // Variável i é inicializada para realizar a busca dentro do nó atual
                 i = -1;
                 break;
             }
         }
 
-        // Caso indice seja maior que todos os elementos do vetor, atual recebe último
-        // ponteiro do nó
-        if (atual != NULL && i == atual->n)
+        // Caso atual ainda seja um nó válido e o índice buscado não tenha sido encontrado, a busca é realizada no nó
+        // com os maiores índices
+        if (atual && i == atual->n)
             atual = atual->filhos[i];
-    } while (pos == -1 && atual != NULL);
+        // A busca continua até encontrar o índice ou até atingir um nó nulo
+    } while (pos == -1 && atual);
 
-    // Caso não tenha encontrado indice na árvore
-    if (atual == NULL)
+    // Se a busca atingiu um nó nulo, a função retorna 0, indicando que o índice não está na árvore
+    if (!atual)
         return 0;
 
-    if (atual->folha) { // Caso indice a ser removido esteja em um nó folha
-        // Copia todos os valores uma posição para frente
+    // Caso a chave a ser removida esteja em um nó folha
+    if (atual->folha) {
+        // As chaves são movidas uma posição para trás dentro do nó, a partir do elemento a ser removido
         for (i = pos; i < atual->n - 1; i++) {
             atual->key[i] = atual->key[i + 1];
         }
+        // A quantidade de chaves do nó é decrementada
         atual->n--;
 
-        // Verifica se houve desbalanceamento
-        if (atual->n < (arv->ordem - 1) / 2 &&
-            arv->sentinela->filhos[0] != atual) {
+        // Se a quantidade de chaves remanescentes no nó for menor que a mínima e o nó não é raiz, o nó foi desbalanceado
+        if (atual->n < (arv->ordem - 1) / 2 && arv->sentinela->filhos[0] != atual)
+            // Chama a função de balanceamento
             bal_remocao(arv, atual);
-        } else if (atual->n ==
-                   0) { // Significa que não existe mais elementos na árvore
-            // Libera estruturas do nó atual
+        // Se a quantidade de chaves do nó atual for igual a zero, significa que a última chave da árvore foi removida
+        else if (atual->n == 0) {
+            // Libera a memória alocada para a árvore
             free(atual->key);
             free(atual->filhos);
             free(atual);
 
+            // Inicializa a raiz
             arv->sentinela->filhos[0] = NULL;
+            // Decrementa a quantidade de nós
             arv->quantidadeNos--;
         }
-    } else { // Caso indice esteja em um nó interno da árvore
-        // Procura sucessor do valor
-        no *filho = atual->filhos[pos + 1];
-        while (filho->filhos[0])
-            filho = filho->filhos[0];
+    // Caso a chave a ser removida esteja em um nó interno
+    } else {
+        // Procura pela chave sucessora da chave a ser removida
+        sucesr = atual->filhos[pos + 1];
+        // A busca pelo sucessor continua até encontrar um nó folha
+        while (sucesr->filhos[0])
+            sucesr = sucesr->filhos[0];
 
-        // Copia valor do sucessor para lugar do indice removido
-        atual->key[pos] = filho->key[0];
+        // Encontrada a chave sucessora, ela é copiada para a chave removida
+        atual->key[pos] = sucesr->key[0];
 
-        // Copia valores uma posição para frente no nó filho
-        for (i = 0; i < filho->n - 1; i++) {
-            filho->key[i] = filho->key[i + 1];
+        // As chaves do nó da sucessora são movidas uma posição para trás
+        for (i = 0; i < sucesr->n - 1; i++) {
+            sucesr->key[i] = sucesr->key[i + 1];
         }
-        filho->n--;
+        // A quantidade de chaves do nó que cedeu a sucessora é decrementada
+        sucesr->n--;
 
-        // Verifica se houve desbalanceamento no nó filho
-        if (filho->n < (arv->ordem - 1) / 2) {
-            bal_remocao(arv, filho);
+        // Se a quantidade de chaves remanescentes no nó for menor que a mínima, o nó foi desbalanceado
+        if (sucesr->n < (arv->ordem - 1) / 2) {
+            // Chama a função de balanceamento
+            bal_remocao(arv, sucesr);
         }
     }
 
@@ -350,46 +366,52 @@ int remove_b_tree(b_tree *arv, int indice) {
 }
 
 void bal_remocao(b_tree *arv, no *atual) {
-    int esq = 0, dir = 0;
-    no *irmao;
-    no *pai = atual->pai;
+    int esq = 0, dir = 0, i;
+    no *irmao, *pai;
 
-    // Verifica se é possível fazer rotação com irmão
-    if (atual->pai_posicao > 0 && pai->filhos[atual->pai_posicao - 1] != NULL &&
-        pai->filhos[atual->pai_posicao - 1]->n >
-        (arv->ordem - 1) / 2) { // Indica que é possível fazer rotação esq
+    pai = atual->pai;
+
+    // Se o nó desbalanceado não for o menor filho do pai e o seu irmão esquerdo tiver uma quantidade de chaves
+    // maior que a mínima
+    if (atual->pai_posicao > 0 && pai->filhos[atual->pai_posicao - 1] &&
+        pai->filhos[atual->pai_posicao - 1]->n > (arv->ordem - 1) / 2) {
+        // É possível realizar a rotação esquerda
         esq = 1;
+        // Variável irmão recebe o irmão esquerdo do nó desbalanceado
         irmao = pai->filhos[atual->pai_posicao - 1];
-    } else if (pai->n >= atual->pai_posicao + 1 &&
-               pai->filhos[atual->pai_posicao + 1]->n >
-               (arv->ordem - 1) /
-               2) { // Indica que é possível fazer rotação dir
+    // Se não, se o nó desbalanceado possuir irmão direito e ele tiver uma quantidade de chaves maior que a mínima
+    } else if (pai->n >= atual->pai_posicao + 1 && pai->filhos[atual->pai_posicao + 1]->n > (arv->ordem - 1) / 2) {
+        // É possível realizar a rotação direita
         dir = 1;
+        // Variável irmão recebe o irmão direito do nó desbalanceado
         irmao = pai->filhos[atual->pai_posicao + 1];
     }
 
-    if (esq) { // Rotação com irmão da esquerda
+    // Se é possível realizar a rotação esquerda
+    if (esq) {
         // Copia valores e filhos do nó atual uma posição para trás
-        for (int i = atual->n; i > 0; i--) {
+        // Move as chaves e os filhos do nó atual uma posição para a frente, liberando a primeira posição do nó
+        for (i = atual->n; i > 0; i--) {
             atual->key[i] = atual->key[i - 1];
             atual->filhos[i + 1] = atual->filhos[i];
-            if (atual->filhos[i + 1] != NULL)
+            // Se os filhos não forem nulos, incrementa a posição deles em relação ao pai
+            if (atual->filhos[i + 1])
                 atual->filhos[i + 1]->pai_posicao++;
         }
+        // O mesmo é feito para a posição 0 do nó
         atual->filhos[1] = atual->filhos[0];
-        if (atual->filhos[1] != NULL)
+        if (atual->filhos[1])
             atual->filhos[1]->pai_posicao++;
 
-        // Copia valor do nó pai para a primeira posição do nó atual
+        // A primeira posição do nó atual, agora vazia, recebe do pai, a chave anterior à chave removida
         atual->key[0] = pai->key[atual->pai_posicao - 1];
 
-        // Copia valor da última posição do irmão para a posição do pai que foi
-        // copiada para nó atual
+        // A última chave do irmão esquerdo é copiada para a posição do pai que cedeu a chave para o nó atual
         pai->key[atual->pai_posicao - 1] = irmao->key[irmao->n - 1];
 
         // Muda pai do nó que estava na última posição do vetor do irmão
         atual->filhos[0] = irmao->filhos[irmao->n];
-        if (atual->filhos[0] != NULL) {
+        if (atual->filhos[0]) {
             atual->filhos[0]->pai = atual;
             atual->filhos[0]->pai_posicao = 0;
         }
@@ -623,21 +645,20 @@ int processa_arquivo(b_tree *arv, char *nomeArquivo) {
         return 0;
 
     int indice, linha = 1;
-    char buffer[100];
-
-    while (!feof(arq)) {
-        // Lê índice a ser inserido na árvore
-        fscanf(arq, "%d", &indice);
-
-        // Insere uma chave na B Tree, contendo o índice e a linha do dado lido
+    while (fscanf(arq, "%d", &indice) == 1) {
+        // Insere na B Tree, o índice e a linha em que os dados estão no arquivo
         insere_b_tree(arv, indice, linha);
 
-        // Pula para próxima linha no arquivo, descartando os dados após o índice
-        fgets(buffer, 100, arq);
+        // Pula para a próxima linha no arquivo
+        // Consome o restante da linha
+        fscanf(arq, "%*[^\n]");
+        fgetc(arq);
 
-        // Incrementa a linha lida
+        // Aumenta o número da linha no arquivo
         linha++;
     }
 
+    // Fecha o arquivo
+    fclose(arq);
     return 1;
 }
