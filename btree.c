@@ -42,9 +42,9 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
         // Aloca as chaves do nó, com ordem chaves. A posição extra permite alocar uma chave além da permitida e
         // realizar a operação de split posteriormente
         raiz->key = (chave *)malloc(arv->ordem * sizeof(chave));
-        // Aloca o keyor de filhos, com tamanho ordem + 1. Mesmo caso da quantidade de chaves.
+        // Aloca o vetor de filhos, com tamanho ordem + 1. Mesmo caso da quantidade de chaves.
         raiz->filhos = (no **)malloc((arv->ordem + 1) * sizeof(no *));
-        // Para cada posição do keyor de filhos, atribui NULL, pois a raiz ainda não nenhum filho
+        // Para cada posição do vetor de filhos, atribui NULL, pois a raiz ainda não nenhum filho
         for (i = 0; i <= arv->ordem; i++) {
             raiz->filhos[i] = NULL;
         }
@@ -70,7 +70,7 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
         for (i = 0; i < atual->n; i++) {
             // Compara as chaves do nó atual até encontrar uma chave com índice maior do que o índice do nó a ser inserido
             if (indice < atual->key[i].indice) {
-                // Encontrou o keyor de filhos onde a inserção deve ser feita
+                // Encontrou o vetor de filhos onde a inserção deve ser feita
                 atual = atual->filhos[i];
                 achou = 1;
                 // Sai do loop
@@ -80,7 +80,7 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
         // Se o índice da chave a ser inserida for maior que o maior índice do nó atual, a chave pertence a um filho
         // direito do nó atual e o loop anterior não pôde encontrar
         if (!achou) {
-            // A chave deve ser inserida no keyor com chaves maiores que o maior índice do nó atual
+            // A chave deve ser inserida no vetor com chaves maiores que o maior índice do nó atual
             atual = atual->filhos[atual->n];
         }
     }
@@ -93,10 +93,10 @@ int insere_b_tree(b_tree *arv, int indice, int valor) {
         if (indice > atual->key[i - 1].indice) {
             break;
         }
-        // Se não, os índices são copiados uma posição para a frente do keyor até que a posição de inserção seja encontrada
+        // Se não, os índices são copiados uma posição para a frente do vetor até que a posição de inserção seja encontrada
         atual->key[i] = atual->key[i - 1];
     }
-    // Encontrada a posição de inserção, atribui-se o índice e o valor passados como parâmetros à respectiva chave
+    // Encontrada a posição de inserção, atribui-se o índice e a linha passados como parâmetros à respectiva chave
     atual->key[i].indice = indice;
     atual->key[i].valor = valor;
     // Incrementa a quantidade de chaves do nó
@@ -199,7 +199,7 @@ void bal_insercao(b_tree *arv, no *atual) {
     } else {
         pai = atual->pai;
         for (i = pai->n; i > atual->pai_posicao; i--) {
-            // Os índices são copiados uma posição para a frente do keyor a cada iteração
+            // Os índices são copiados uma posição para a frente do vetor a cada iteração
             pai->key[i] = pai->key[i - 1];
             // A partir da posição atual do nó, os keyores dos filhos do pai são copiados uma posição para a frente
             pai->filhos[i + 1] = pai->filhos[i];

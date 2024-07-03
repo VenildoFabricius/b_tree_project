@@ -3,7 +3,7 @@
 
 typedef struct chave{           // Estrutura para armazenar a chave
     int indice;                 // Guarda o índice da chave
-    int valor;                  // Guarda o valor da chave
+    int valor;                  // Guarda a linha onde os dados estão localizados no arquivo
 } chave;
 
 typedef struct no {
