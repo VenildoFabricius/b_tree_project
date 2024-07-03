@@ -10,13 +10,17 @@
 #define STRING_SIZE 10
 
 void gera_pal_aleatoria(char *str, size_t size) {
+    // Define o conjunto de caracteres possíveis
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     if (size) {
         --size;
         for (size_t n = 0; n < size; n++) {
+            // Seleciona um caractere aleatório do conjunto de caracteres possíveis
             int key = rand() % (int)(sizeof(charset) - 1);
+            // Armazena o caractere selecionado no vetor passado como parâmetro
             str[n] = charset[key];
         }
+        // Define o último caractere da string, indicando seu fim
         str[size] = '\0';
     }
 }

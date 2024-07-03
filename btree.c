@@ -337,8 +337,9 @@ int remove_b_tree(b_tree *arv, int indice) {
             // Decrementa a quantidade de nós
             arv->quantidadeNos--;
         }
-    // Caso a chave a ser removida esteja em um nó interno
-    } else {
+
+    } // Caso a chave a ser removida esteja em um nó interno
+    else {
         // Procura pela chave sucessora da chave a ser removida
         sucesr = atual->filhos[pos + 1];
         // A busca pelo sucessor continua até encontrar um nó folha
@@ -366,7 +367,7 @@ int remove_b_tree(b_tree *arv, int indice) {
 }
 
 void bal_remocao(b_tree *arv, no *atual) {
-    int esq = 0, dir = 0, i;
+    int esq = 0, dir = 0, i, j;
     no *irmao, *pai;
 
     pai = atual->pai;
@@ -389,7 +390,6 @@ void bal_remocao(b_tree *arv, no *atual) {
 
     // Se é possível realizar a rotação esquerda
     if (esq) {
-        // Copia valores e filhos do nó atual uma posição para trás
         // Move as chaves e os filhos do nó atual uma posição para a frente, liberando a primeira posição do nó
         for (i = atual->n; i > 0; i--) {
             atual->key[i] = atual->key[i - 1];
@@ -409,148 +409,181 @@ void bal_remocao(b_tree *arv, no *atual) {
         // A última chave do irmão esquerdo é copiada para a posição do pai que cedeu a chave para o nó atual
         pai->key[atual->pai_posicao - 1] = irmao->key[irmao->n - 1];
 
-        // Muda pai do nó que estava na última posição do vetor do irmão
+        // Os filhos da última chave do irmão, que foi transferida para o pai, passam a ser os primeiros filhos do nó atual
         atual->filhos[0] = irmao->filhos[irmao->n];
+        // Atualiza o pai dos filhos que foram transferidos para o nó atual, bem como a posição deles em relação ao pai
         if (atual->filhos[0]) {
             atual->filhos[0]->pai = atual;
             atual->filhos[0]->pai_posicao = 0;
         }
+        // Incrementa a quantidade de chaves do nó atual
         atual->n++;
+        // e decrementa a quantidade de chaves do irmão que transferiu a chave
         irmao->n--;
-    } else if (dir) { // Rotação com irmão da direita
-        // Copia valor do pai para última posição do vetor do nó atual
+
+    } // Se é possível realizar a rotação direita
+    else if (dir) {
+        // A posição "extra" do nó atual recebe do pai, a chave sucessora da chave removida
         atual->key[atual->n] = pai->key[atual->pai_posicao];
 
-        // Copia valor da primeira posição do irmão para o pai
+        // A primeira chave do irmão da direita é copiada para o pai, no lugar da chave transferida para o nó atual
         pai->key[atual->pai_posicao] = irmao->key[0];
 
-        // Copia primeiro ponteiro do irmão para última posição do nó atual
+        // Os filhos da primeira chave do irmão, que foi transferida para o pai, passam a ser os últimos filhos do nó atual
         atual->filhos[atual->n + 1] = irmao->filhos[0];
-        if (atual->filhos[atual->n + 1] != NULL) {
+        // Atualiza o pai dos filhos que foram transferidos para o nó atual, bem como a posição deles em relação ao pai
+        if (atual->filhos[atual->n + 1]) {
             atual->filhos[atual->n + 1]->pai = atual;
             atual->filhos[atual->n + 1]->pai_posicao = atual->n + 1;
         }
 
-        // Move elementos do nó irmao uma posição para frente
-        for (int i = 0; i < irmao->n - 1; i++) {
+        // Como a primeira posição do irmão ficou vazia, move todas as chaves e filhos deste nó uma posição para trás
+        for (i = 0; i < irmao->n - 1; i++) {
             irmao->key[i] = irmao->key[i + 1];
             irmao->filhos[i] = irmao->filhos[i + 1];
-            if (irmao->filhos[i] != NULL)
+            // Atualiza a posição dos filhos em relação ao pai, caso estes não sejam nulos
+            if (irmao->filhos[i])
                 irmao->filhos[i]->pai_posicao--;
         }
+
+        // O mesmo é feito para a posição 0 do nó
         irmao->filhos[irmao->n - 1] = irmao->filhos[irmao->n];
-        if (irmao->filhos[irmao->n - 1] != NULL)
+        if (irmao->filhos[irmao->n - 1])
             irmao->filhos[irmao->n - 1]->pai_posicao--;
 
+        // Incrementa a quantidade de chaves do nó atual
         atual->n++;
+        // e decrementa a quantidade de chaves do irmão que transferiu a chave
         irmao->n--;
-    } else {                        // Operação de Merge
-        if (atual->pai_posicao < pai->n) { // Merge com irmão da direita
+    }
+    // Se não for possível realizar rotações, é necessário realizar a operação de MERGE
+    else {
+        // Se o nó atual não for o maior filho do pai, faz o merge com o irmão da direita
+        if (atual->pai_posicao < pai->n) {
+            // Variável irmão recebe o irmão da direita
             irmao = pai->filhos[atual->pai_posicao + 1];
 
-            // Copia valor do pai para última posição do nó atual
+            // A última posição do nó atual recebe do pai, a chave sucessora da chave removida
             atual->key[atual->n] = pai->key[atual->pai_posicao];
 
-            // Copia valores do pai uma posição para frente a partir da posição que
-            // foi para nó atual
-            for (int i = atual->pai_posicao + 1; i < pai->n; i++) {
+            // Como uma chave do pai foi movida para um de seus filhos, move-se uma posição para trás,
+            // todas as chaves e filhos posteriores à chave que foi movida
+            for (i = atual->pai_posicao + 1; i < pai->n; i++) {
                 pai->key[i - 1] = pai->key[i];
                 pai->filhos[i] = pai->filhos[i + 1];
-                if (pai->filhos[i] != NULL)
+                if (pai->filhos[i])
                     pai->filhos[i]->pai_posicao--;
             }
 
-            // Copia valores do irmão para o nó atual
-            int j = atual->n + 1;
-            for (int i = 0; i < irmao->n; i++) {
+            // Copia as chaves e os filhos do irmão para o nó atual
+            // Como a quantidade de chaves do nó atual ainda não foi incrementada, e este nó já recebeu a chave do pai,
+            // o ponto de inserção de novos elementos (j) será a quantidade de chaves no nó +1
+            j = atual->n + 1;
+            for (i = 0; i < irmao->n; i++) {
                 atual->key[j] = irmao->key[i];
                 atual->filhos[j] = irmao->filhos[i];
-                if (atual->filhos[j] != NULL) {
+                // Atualiza o pai dos filhos, caso não sejam nulos, bem como a posição deles em relação ao pai
+                if (atual->filhos[j]) {
                     atual->filhos[j]->pai = atual;
                     atual->filhos[j]->pai_posicao = j;
                 }
                 j++;
             }
 
-            // Copia último ponteiro do irmão para o nó atual
+            // O mesmo é feito para o último elemento
             atual->filhos[j] = irmao->filhos[irmao->n];
-            if (atual->filhos[j] != NULL) {
+            if (atual->filhos[j]) {
                 atual->filhos[j]->pai = atual;
                 atual->filhos[j]->pai_posicao = j;
             }
 
-            // Atual recebeu todos os nós de seu irmão e um de seu pai
+            // Incrementa a quantidade de chaves do nó atual com a quantidade de chaves recebidas do irmão
+            // mais a chave recebida do pai
             atual->n += irmao->n + 1;
 
-            // Libera estruturas do irmão
+            // Libera a memória alocada para o irmão, que agora formou apenas um nó com o nó atual
             free(irmao->key);
             free(irmao->filhos);
             free(irmao);
 
+            // Decrementa a quantidade de nós da árvore
             arv->quantidadeNos--;
 
-            // Indica qual nó foi removido o irmão ou o nó atual
+            // Reutilização da variável esq para informar que o nó removido foi o irmão. Ao fim da operação de merge,
+            // caso a raiz tenha ficado sem nenhuma chave, ela deve ser atualizada com o nó atual ou irmão
             esq = 1;
-        } else { // Merge com irmão da esquerda
+        }
+        // Se não for possível o merge com o irmão da direita, faz com o irmão da esquerda
+        else {
+            // variável irmão recebe o irmão da esquerda
             irmao = pai->filhos[atual->pai_posicao - 1];
 
-            // Copia valor do pai para última posição do nó irmão
+            // A última posição do nó irmão recebe do pai, a chave anterior à chave removida
             irmao->key[irmao->n] = pai->key[atual->pai_posicao - 1];
 
-            // Copia todos os elementos do nó atual para final do nó irmão
-            int j = irmao->n + 1;
-            for (int i = 0; i < atual->n; i++) {
+            // Copia as chaves e os filhos do nó atual para o final do irmão esquerdo
+            j = irmao->n + 1;
+            for (i = 0; i < atual->n; i++) {
                 irmao->key[j] = atual->key[i];
                 irmao->filhos[j] = atual->filhos[i];
-                if (irmao->filhos[j] != NULL) {
+                // Atualiza o pai dos filhos, caso não sejam nulos, bem como a posição deles em relação ao pai
+                if (irmao->filhos[j]) {
                     irmao->filhos[j]->pai = irmao;
                     irmao->filhos[j]->pai_posicao = j;
                 }
                 j++;
             }
 
-            // Copia último ponteiro do nó atual para o irmão
+            // O mesmo é feito para o último elemento
             irmao->filhos[j] = atual->filhos[atual->n];
-            if (irmao->filhos[j] != NULL) {
+            if (irmao->filhos[j]) {
                 irmao->filhos[j]->pai = irmao;
                 irmao->filhos[j]->pai_posicao = j;
             }
 
-            // Irmão recebeu todos os nós de atual e um de seu pai
+            // Incrementa a quantidade de chaves do irmão com a quantidade de chaves recebidas do nó atual
+            // mais a chave recebida do pai
             irmao->n += atual->n + 1;
 
-            // Libera estruturas do nó atual
+            // Libera a memória alocada para o nó atual, que agora formou apenas um nó com o irmão
             free(atual->key);
             free(atual->filhos);
             free(atual);
 
+            // Decrementa a quantidade de nós da árvore
             arv->quantidadeNos--;
         }
 
         // Na operação de Merge o pai sempre perde um elemento
+        // Decrementa a quantidade de chaves do pai, que na operação de merge perde um elemento
         pai->n--;
 
-        // Verifica se desbalanceou o pai
-        if (pai->n < (arv->ordem - 1) / 2 && arv->sentinela->filhos[0] != pai) {
+        // Se a quantidade de chaves remanescentes no pai for menor que a mínima e o pai não for raiz, indica que
+        // o pai foi desbalanceado
+        if (pai->n < (arv->ordem - 1) / 2 && arv->sentinela->filhos[0] != pai)
+            // Chama a função recursivamente para balanceamento do pai
             bal_remocao(arv, pai);
-        } else if (pai->n == 0) {
-            // Caso a raiz da árvore tenha ficado com 0 elementos é necessário fazer
-            // atualização
 
-            // Verifica qual nó deve se tornar a nova raiz
+        // Se o pai for a raiz e não sobrou nenhuma chave neste nó, a raiz deve ser atualizada.
+        else if (pai->n == 0) {
+            // Se a variável esq foi alterada, indica que o irmão foi removido no merge, portanto, a nova raiz
+            // passa a ser o nó atual
             if (esq) {
                 arv->sentinela->filhos[0] = atual;
                 atual->pai = arv->sentinela;
-            } else {
+            }
+            // Se não, a nova raiz passa a ser o irmão
+            else {
                 arv->sentinela->filhos[0] = irmao;
                 irmao->pai = arv->sentinela;
             }
 
-            // Libera estruturas da antiga raiz
+            // Libera a memória alocada para o nó pai, que era a raiz
             free(pai->key);
             free(pai->filhos);
             free(pai);
 
+            // Decrementa a quantidade de nós da árvore
             arv->quantidadeNos--;
         }
     }
