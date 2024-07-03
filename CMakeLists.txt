@@ -10,4 +10,6 @@ add_executable(Trabalho_2
         btree.h
         gera_dados.c
         gera_dados.h
-        main.c)
+        main.c
+        fcs_main.c
+        fcs_main.h)
